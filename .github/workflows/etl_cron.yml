@@ -2,31 +2,39 @@ name: Hourly Crypto ETL
 
 on:
   schedule:
-    - cron: '0 * * * *' # Runs every hour on the hour
-  workflow_dispatch: # Allows you to run it manually from GitHub
+    - cron: '0 * * * *' # Triggers every hour on the hour
+  workflow_dispatch: # Enables manual "Run workflow" button in GitHub Actions
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    
+    # Permission block is required to fix the 403 'Permission Denied' error
+    permissions:
+      contents: write 
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # Clones your repository onto the GitHub runner
 
       - name: Set up Python
-        uses: actions/setup-python@v5 
+        uses: actions/setup-python@v5 # FIXED: Official verified repository
         with:
-          python-version: '3.11'
+          python-version: '3.11' # Ensures environment matches your local setup
 
       - name: Install dependencies
-        run: pip install pandas requests
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas requests # Installs the libraries needed for generate_csv.py
 
       - name: Run ETL
-        run: python generate_csv.py
+        run: python generate_csv.py # Executes your data ingestion script
 
       - name: Commit and Push changes
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add crypto_data.csv
-          git commit -m "Automated ETL update" || exit 0
+          # The "|| exit 0" prevents the action from failing if the data hasn't changed
+          git commit -m "Automated ETL update: $(date)" || exit 0 
           git push
