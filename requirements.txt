@@ -12,3 +12,5 @@ httpx
 tenacity
 python-json-logger
 streamlit
+plotly
+pandas
