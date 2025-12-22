@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: kasparro_db
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d kasparro_db"]
+      interval: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: .
+    container_name: kasparro_backend
+    
+    # ⚠️ REMOVED: volumes: - .:/app 
+    # This is bad practice as it overrides the build step and volume mounting is not needed 
+    # for production deployment verification.
+
+    ports:
+      - "8000:8000"
+    
+    # We will revert to the entrypoint.sh script from Phase 2.
+    # This is mandatory to ensure both the API (Uvicorn) AND the ETL Scheduler start automatically.
+    # Requirement: "Automatically starts the ETL service" AND "Exposes API endpoints immediately"
+    command: ["/bin/bash", "entrypoint.sh"] 
+    
+    environment:
+      # Database connection string (remains hardcoded as this is for the internal Docker network)
+      DATABASE_URL: postgresql://user:postgres@db:5432/kasparro_db
+      
+      # 🔑 SECURITY FIX: Load the key from the root .env file
+      # Docker Compose reads the value from the host's .env and injects it here.
+      API_KEY: ${COINGECKO_API_KEY} 
+      
+    healthcheck:
+      # Use the provided healthcheck
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+      
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

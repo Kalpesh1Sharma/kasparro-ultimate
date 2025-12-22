@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+requests
+tenacity      # For Retries (P2.3)
+thefuzz       # For Drift Detection (P2.1)
+python-levenshtein
+apscheduler
+pytest
+httpx
+tenacity
+python-json-logger
+streamlit
