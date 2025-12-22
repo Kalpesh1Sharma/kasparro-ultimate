@@ -4,20 +4,15 @@ import os
 from datetime import datetime
 
 def run_etl():
-    # CoinGecko API URL for Bitcoin
+    # Use CoinGecko for reliable market data
     url = "https://api.coingecko.com/api/v3/simple/price"
-    params = {
-        'ids': 'bitcoin',
-        'vs_currencies': 'usd',
-        'include_24hr_vol': 'true'
-    }
+    params = {'ids': 'bitcoin', 'vs_currencies': 'usd', 'include_24hr_vol': 'true'}
     
     try:
         response = requests.get(url, params=params)
         data = response.json()
         
-        # Extract data with safe defaults
-        # Ensure these exact keys are used when creating the CSV
+        # Enforce column naming convention to match Dashboard
         new_row = {
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'price_usd': data['bitcoin']['usd'],
@@ -25,20 +20,20 @@ def run_etl():
         }
         
         df_new = pd.DataFrame([new_row])
-        
-        # Append to existing CSV or create new one
         file_path = 'crypto_data.csv'
+        
         if os.path.exists(file_path):
             df_existing = pd.read_csv(file_path)
+            # Maintain data history by appending
             df_final = pd.concat([df_existing, df_new], ignore_index=True)
         else:
             df_final = df_new
             
         df_final.to_csv(file_path, index=False)
-        print(f"Successfully updated {file_path}")
+        print(f"Data ingested successfully into {file_path}")
         
     except Exception as e:
-        print(f"ETL Error: {e}")
+        print(f"Ingestion Failure: {e}")
 
 if __name__ == "__main__":
     run_etl()
