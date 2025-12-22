@@ -36,8 +36,4 @@ def run_etl():
         print(f"Ingestion Failure: {e}")
 
 if __name__ == "__main__":
-<<<<<<< HEAD
     run_etl()
-=======
-    run_etl()
->>>>>>> 895b703b7027cb69fd7907bcf327b3bd0212a2be

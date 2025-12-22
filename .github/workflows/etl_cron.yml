@@ -1,0 +1,32 @@
+name: Hourly Crypto ETL
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Runs every hour on the hour
+  workflow_dispatch: # Allows you to run it manually from GitHub
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: py-actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pandas requests
+
+      - name: Run ETL
+        run: python generate_csv.py
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add crypto_data.csv
+          git commit -m "Automated ETL update" || exit 0
+          git push
