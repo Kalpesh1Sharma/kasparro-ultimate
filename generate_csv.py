@@ -17,6 +17,7 @@ def run_etl():
         data = response.json()
         
         # Extract data with safe defaults
+        # Ensure these exact keys are used when creating the CSV
         new_row = {
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'price_usd': data['bitcoin']['usd'],
