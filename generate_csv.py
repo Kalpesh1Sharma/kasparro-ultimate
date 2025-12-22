@@ -1,42 +1,39 @@
+import pandas as pd
 import requests
-import csv
+import os
 from datetime import datetime
 
-# URL for getting all active coins (Free Tier compatible)
-URL = "https://api.coinpaprika.com/v1/tickers"
-
-def generate_csv():
-    print("--- Fetching Real Data from CoinPaprika ---")
+def run_etl():
+    # Use CoinGecko for reliable market data
+    url = "https://api.coingecko.com/api/v3/simple/price"
+    params = {'ids': 'bitcoin', 'vs_currencies': 'usd', 'include_24hr_vol': 'true'}
+    
     try:
-        response = requests.get(URL)
-        response.raise_for_status() # Check for HTTP errors
+        response = requests.get(url, params=params)
         data = response.json()
         
-        # Take only the top 20 coins to keep the CSV clean
-        top_20 = data[:20]
-
-        # Define the file path
-        filename = "app/market_data.csv"
-
-        with open(filename, mode='w', newline='', encoding='utf-8') as file:
-            # We intentionally use different headers to simulate a "messy" client file
-            # Schema Mapping: 'AssetName' -> 'symbol', 'LastPrice' -> 'price_usd'
-            writer = csv.writer(file)
-            writer.writerow(["AssetName", "Ticker", "LastPrice", "CapturedAt"])
-
-            for coin in top_20:
-                writer.writerow([
-                    coin["name"],           # e.g., "Bitcoin"
-                    coin["symbol"],         # e.g., "BTC"
-                    coin["quotes"]["USD"]["price"], 
-                    datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                ])
+        # Enforce column naming convention to match Dashboard
+        new_row = {
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'price_usd': data['bitcoin']['usd'],
+            'volume_24h': data['bitcoin']['usd_24h_vol']
+        }
         
-        print(f"✅ Success! Generated '{filename}' with top 20 live coins.")
-        print("   Example row:", top_20[0]["name"], top_20[0]["quotes"]["USD"]["price"])
-
+        df_new = pd.DataFrame([new_row])
+        file_path = 'crypto_data.csv'
+        
+        if os.path.exists(file_path):
+            df_existing = pd.read_csv(file_path)
+            # Maintain data history by appending
+            df_final = pd.concat([df_existing, df_new], ignore_index=True)
+        else:
+            df_final = df_new
+            
+        df_final.to_csv(file_path, index=False)
+        print(f"Data ingested successfully into {file_path}")
+        
     except Exception as e:
-        print(f"❌ Failed to generate CSV: {e}")
+        print(f"Ingestion Failure: {e}")
 
 if __name__ == "__main__":
-    generate_csv()
+    run_etl()
